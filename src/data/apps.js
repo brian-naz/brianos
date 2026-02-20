@@ -7,6 +7,6 @@ export const apps = [
   {
     name: "Chat",
     icon: "/icons/chat.png",
-    url: "https://your-chat-app.com"
+    url: "https://messagesappdemo.vercel.app/"
   }
 ];
