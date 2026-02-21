@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import StatusBar from "./StatusBar";
+import { useCallback } from "react";
 
 const AppView = ({ app, closeApp }) => {
   const startY = useRef(null);
@@ -52,6 +53,15 @@ const AppView = ({ app, closeApp }) => {
     setIsDragging(false);
   };
 
+  const animateClose = useCallback(() => {
+    setIsClosing(true);
+    setTranslateY(-window.innerHeight);
+
+    setTimeout(() => {
+      closeApp();
+    }, 300);
+  }, [closeApp]);
+
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key === "Escape") {
@@ -66,17 +76,7 @@ const AppView = ({ app, closeApp }) => {
 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, []);
-
-  const animateClose = () => {
-    setIsClosing(true);
-
-    setTranslateY(-window.innerHeight);
-
-    setTimeout(() => {
-      closeApp();
-    }, 300);
-  };
+  }, [animateClose]);
 
   return (
     <div
