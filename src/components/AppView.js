@@ -1,53 +1,107 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import StatusBar from "./StatusBar";
 
 const AppView = ({ app, closeApp }) => {
   const startY = useRef(null);
+  const startTime = useRef(null);
+
   const [translateY, setTranslateY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const [isClosing, setIsClosing] = useState(false);
+
+  const THRESHOLD_PERCENT = 0.25; // 25% of screen
+  const FLICK_VELOCITY = 0.6; // fast swipe detection
 
   const handleStart = (e) => {
-    startY.current = e.touches ? e.touches[0].clientY : e.clientY;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+
+    startY.current = y;
+    startTime.current = Date.now();
+    setIsDragging(true);
   };
 
   const handleMove = (e) => {
-    if (startY.current === null) return;
+    if (!isDragging) return;
 
     const currentY = e.touches ? e.touches[0].clientY : e.clientY;
-
     const delta = currentY - startY.current;
 
-    // only allow upward swipe
+    // Only allow upward drag
     if (delta < 0) {
       setTranslateY(delta);
     }
   };
 
   const handleEnd = () => {
-    if (translateY < -120) {
-      closeApp(); // swipe threshold
+    if (!isDragging) return;
+
+    const dragDistance = Math.abs(translateY);
+    const dragTime = Date.now() - startTime.current;
+    const velocity = dragDistance / dragTime;
+
+    const screenHeight = window.innerHeight;
+    const requiredDistance = screenHeight * THRESHOLD_PERCENT;
+
+    if (dragDistance > requiredDistance || velocity > FLICK_VELOCITY) {
+      closeApp();
     } else {
-      setTranslateY(0); // snap back
+      setTranslateY(0);
     }
 
-    startY.current = null;
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === "Escape") {
+        animateClose();
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key === "w") {
+        e.preventDefault();
+        animateClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
+
+  const animateClose = () => {
+    setIsClosing(true);
+
+    setTranslateY(-window.innerHeight);
+
+    setTimeout(() => {
+      closeApp();
+    }, 300);
   };
 
   return (
     <div
       className="app-view"
-      style={{ transform: `translateY(${translateY}px)` }}
+      style={{
+        transform: `
+    translateY(${translateY}px)
+    scale(${isClosing ? 0.96 : 1})
+  `,
+        transition: isDragging
+          ? "none"
+          : "transform 0.3s cubic-bezier(.25,.8,.25,1)",
+      }}
+      onTouchStart={handleStart}
+      onTouchMove={handleMove}
+      onTouchEnd={handleEnd}
+      onMouseDown={handleStart}
+      onMouseMove={handleMove}
+      onMouseUp={handleEnd}
     >
-        <StatusBar />
+      <StatusBar />
+
       <iframe src={app.url} title={app.name} className="app-iframe" />
-      <div
-        className="home-bar"
-        onTouchStart={handleStart}
-        onTouchMove={handleMove}
-        onTouchEnd={handleEnd}
-        onMouseDown={handleStart}
-        onMouseMove={handleMove}
-        onMouseUp={handleEnd}
-      />
+
+      <div className="home-bar" />
     </div>
   );
 };
