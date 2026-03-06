@@ -8,16 +8,11 @@ function App() {
   const [activeApp, setActiveApp] = useState(null);
 
   return (
-    <PhoneFrame>
-      {!activeApp && (
-        <HomeScreen openApp={setActiveApp} />
-      )}
+    <PhoneFrame forceDarkStatusBar={activeApp && !activeApp.supportsTheme}>
+      {!activeApp && <HomeScreen openApp={setActiveApp} />}
 
       {activeApp && (
-        <AppView
-          app={activeApp}
-          closeApp={() => setActiveApp(null)}
-        />
+        <AppView app={activeApp} closeApp={() => setActiveApp(null)} />
       )}
     </PhoneFrame>
   );
