@@ -1,8 +1,9 @@
-import { useRef, useState, useEffect } from "react";
-import StatusBar from "./StatusBar";
-import { useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useContext } from "react";
+import { SystemContext } from "../context/SystemContext";
 
 const AppView = ({ app, closeApp }) => {
+  const appViewRef = useRef(null);
+
   const startY = useRef(null);
   const startTime = useRef(null);
 
@@ -20,6 +21,8 @@ const AppView = ({ app, closeApp }) => {
     startY.current = y;
     startTime.current = Date.now();
     setIsDragging(true);
+
+    e.stopPropagation();
   };
 
   const handleMove = (e) => {
@@ -41,7 +44,7 @@ const AppView = ({ app, closeApp }) => {
     const dragTime = Date.now() - startTime.current;
     const velocity = dragDistance / dragTime;
 
-    const screenHeight = window.innerHeight;
+    const screenHeight = appViewRef.current?.offsetHeight || window.innerHeight;
     const requiredDistance = screenHeight * THRESHOLD_PERCENT;
 
     if (dragDistance > requiredDistance || velocity > FLICK_VELOCITY) {
@@ -55,7 +58,7 @@ const AppView = ({ app, closeApp }) => {
 
   const animateClose = useCallback(() => {
     setIsClosing(true);
-    setTranslateY(-window.innerHeight);
+    setTranslateY(-(appViewRef.current?.offsetHeight || window.innerHeight));
 
     setTimeout(() => {
       closeApp();
@@ -65,11 +68,13 @@ const AppView = ({ app, closeApp }) => {
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key === "Escape") {
+        window.focus();
         animateClose();
       }
 
       if ((e.metaKey || e.ctrlKey) && e.key === "w") {
         e.preventDefault();
+        window.focus();
         animateClose();
       }
     };
@@ -78,8 +83,12 @@ const AppView = ({ app, closeApp }) => {
     return () => window.removeEventListener("keydown", handleKey);
   }, [animateClose]);
 
+  const { locationEnabled, coords } = useContext(SystemContext);
+  const { resolvedTheme } = useContext(SystemContext);
+
   return (
     <div
+      ref={appViewRef}
       className="app-view"
       style={{
         transform: `
@@ -90,18 +99,30 @@ const AppView = ({ app, closeApp }) => {
           ? "none"
           : "transform 0.3s cubic-bezier(.25,.8,.25,1)",
       }}
-      onTouchStart={handleStart}
-      onTouchMove={handleMove}
-      onTouchEnd={handleEnd}
-      onMouseDown={handleStart}
-      onMouseMove={handleMove}
-      onMouseUp={handleEnd}
     >
-      <StatusBar />
+      {app.type === "internal" ? (
+        <app.component />
+      ) : (
+        <iframe
+          src={
+            locationEnabled && coords
+              ? `${app.url}?lat=${coords.lat}&lon=${coords.lon}&theme=${resolvedTheme}`
+              : `${app.url}?theme=${resolvedTheme}`
+          }
+          title={app.name}
+          className="app-iframe"
+        />
+      )}
 
-      <iframe src={app.url} title={app.name} className="app-iframe" />
-
-      <div className="home-bar" />
+      <div
+        className="home-bar"
+        onTouchStart={handleStart}
+        onTouchMove={handleMove}
+        onTouchEnd={handleEnd}
+        onMouseDown={handleStart}
+        onMouseMove={handleMove}
+        onMouseUp={handleEnd}
+      />
     </div>
   );
 };
