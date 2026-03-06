@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
+import { SystemContext } from "../context/SystemContext";
 
-const StatusBar = ({ themeColor }) => {
+const StatusBar = ({ themeColor, forceDark = false }) => {
   const [time, setTime] = useState("");
   const [battery, setBattery] = useState(100);
   const [charging, setCharging] = useState(false);
@@ -9,8 +10,8 @@ const StatusBar = ({ themeColor }) => {
   const [connectionType, setConnectionType] = useState(null);
   const [effectiveType, setEffectiveType] = useState(null);
 
-  const [dnd, setDnd] = useState(false);
   const [lowPower, setLowPower] = useState(false);
+  const { dnd, resolvedTheme } = useContext(SystemContext);
 
   useEffect(() => {
     const updateTime = () => {
@@ -18,7 +19,7 @@ const StatusBar = ({ themeColor }) => {
 
       const formatted = now
         .toLocaleTimeString([], {
-          hour: "2-digit",
+          hour: "numeric",
           minute: "2-digit",
         })
         .replace(/\s?(AM|PM)/, "");
@@ -98,17 +99,6 @@ const StatusBar = ({ themeColor }) => {
     };
   }, []);
 
-  useEffect(() => {
-    const handleKey = (e) => {
-      if (e.shiftKey && e.key.toLowerCase() === "d") {
-        setDnd((prev) => !prev);
-      }
-    };
-
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, []);
-
   const isLightColor = (hex) => {
     const c = hex.substring(1);
     const rgb = parseInt(c, 16);
@@ -119,7 +109,13 @@ const StatusBar = ({ themeColor }) => {
     return luminance > 186;
   };
 
-  const textColor = themeColor && isLightColor(themeColor) ? "black" : "white";
+  const textColor = forceDark
+    ? "white"
+    : themeColor
+      ? isLightColor(themeColor)
+        ? "black"
+        : "white"
+      : undefined;
 
   const MoonIcon = () => (
     <svg viewBox="0 0 24 24" className="moon-icon">
@@ -155,48 +151,42 @@ const StatusBar = ({ themeColor }) => {
         />
         <BatteryIcon
           level={battery}
-          charging={
-            charging && (
-              <div className="bolt">
-                <BoltIcon lowPower={lowPower} />
-              </div>
-            )
-          }
+          charging={charging}
           lowPower={lowPower}
+          resolvedTheme={resolvedTheme}
         />
       </div>
     </div>
   );
 };
 
-const BoltIcon = ({ lowPower }) => (
-  <svg
-    viewBox="0 0 24 24"
-    width="8"
-    height="10"
-    style={{
-      display: "block",
-      color: lowPower ? "black" : "white",
-    }}
-  >
-    <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" fill="currentColor" />
-  </svg>
-);
+const BatteryIcon = ({ level, charging, lowPower, resolvedTheme }) => {
+  const boltColor = lowPower
+    ? "black"
+    : resolvedTheme === "dark"
+      ? "black"
+      : "white";
 
-const BatteryIcon = ({ level, charging, lowPower }) => {
   return (
     <div className="battery">
       <div
         className="battery-level"
         style={{
           width: `${level}%`,
-          background: lowPower ? "#FFD60A" : "white",
+          background: lowPower ? "#FFD60A" : "currentColor",
         }}
       />
 
       {charging && (
         <div className="bolt">
-          <BoltIcon lowPower={lowPower} />
+          <svg
+            viewBox="0 0 24 24"
+            width="8"
+            height="10"
+            style={{ display: "block", color: boltColor }}
+          >
+            <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" fill="currentColor" />
+          </svg>
         </div>
       )}
     </div>
@@ -206,10 +196,6 @@ const BatteryIcon = ({ level, charging, lowPower }) => {
 const NetworkIcon = ({ online, type, effectiveType }) => {
   if (!online) {
     return <div className="signal offline">✖</div>;
-  }
-
-  if (type === "wifi") {
-    return <div className="wifi">🛜</div>;
   }
 
   if (type === "cellular" || effectiveType) {
@@ -223,7 +209,14 @@ const NetworkIcon = ({ online, type, effectiveType }) => {
     );
   }
 
-  return <div className="wifi">📶</div>;
+  return (
+    <div className="signal-bars">
+      <span />
+      <span />
+      <span />
+      <span />
+    </div>
+  );
 };
 
 export default StatusBar;
