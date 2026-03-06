@@ -215,8 +215,15 @@
   content: "";
   width: 120px;
   height: 5px;
-  background: rgba(255, 255, 255, 0.7);
   border-radius: 3px;
+}
+
+.screen.dark .home-bar::before {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.screen.light .home-bar::before {
+  background: rgba(0, 0, 0, 0.75);
 }
 
 .dock {
