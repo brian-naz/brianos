@@ -16,7 +16,7 @@ export const apps = [
   {
     name: "Notes",
     icon: "/icons/notes.png",
-    url: "http://notes-app-azure-nine.vercel.app/",
+    url: "https://notes-app-azure-nine.vercel.app/",
     supportsTheme: false,
   },
   {
