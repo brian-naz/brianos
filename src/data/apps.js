@@ -11,13 +11,13 @@ export const apps = [
     name: "Messages",
     icon: "/icons/chat.png",
     url: "https://messagesappdemo.vercel.app/",
-    supportsTheme: false,
+    supportsTheme: true,
   },
   {
     name: "Notes",
     icon: "/icons/notes.png",
     url: "https://notes-app-brian-naz.vercel.app/",
-    supportsTheme: false,
+    supportsTheme: true,
   },
   {
     name: "Settings",
